@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,7 +24,12 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponseDto<Map<String, String>>> handleValidationExceptions(
-            MethodArgumentNotValidException ex) {
+            MethodArgumentNotValidException ex, HttpServletRequest request) {
+        
+        // No manejar errores de rutas de Swagger/OpenAPI
+        if (isSwaggerPath(request)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build(); // Dejar que Spring maneje nativamente
+        }
         
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getAllErrors().forEach((error) -> {
@@ -45,7 +51,13 @@ public class GlobalExceptionHandler {
      * Manejo de excepciones de usuario personalizada
      */
     @ExceptionHandler(UsuarioException.class)
-    public ResponseEntity<ApiResponseDto<Void>> handleUsuarioException(UsuarioException ex) {
+    public ResponseEntity<ApiResponseDto<Void>> handleUsuarioException(UsuarioException ex, HttpServletRequest request) {
+        
+        // No manejar errores de rutas de Swagger/OpenAPI
+        if (isSwaggerPath(request)) {
+            throw ex; // Re-lanzar para que Spring maneje nativamente
+        }
+        
         HttpStatus status;
         
         switch (ex.getCodigo()) {
@@ -73,7 +85,13 @@ public class GlobalExceptionHandler {
      * Manejo de credenciales incorrectas
      */
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<ApiResponseDto<Void>> handleBadCredentialsException(BadCredentialsException ex) {
+    public ResponseEntity<ApiResponseDto<Void>> handleBadCredentialsException(BadCredentialsException ex, HttpServletRequest request) {
+        
+        // No manejar errores de rutas de Swagger/OpenAPI
+        if (isSwaggerPath(request)) {
+            throw ex; // Re-lanzar para que Spring maneje nativamente
+        }
+        
         ApiResponseDto<Void> response = ApiResponseDto.error(
             "CREDENCIALES_INVALIDAS", 
             "Usuario o contraseña incorrectos"
@@ -85,7 +103,13 @@ public class GlobalExceptionHandler {
      * Manejo de usuario no encontrado
      */
     @ExceptionHandler(UsernameNotFoundException.class)
-    public ResponseEntity<ApiResponseDto<Void>> handleUsernameNotFoundException(UsernameNotFoundException ex) {
+    public ResponseEntity<ApiResponseDto<Void>> handleUsernameNotFoundException(UsernameNotFoundException ex, HttpServletRequest request) {
+        
+        // No manejar errores de rutas de Swagger/OpenAPI
+        if (isSwaggerPath(request)) {
+            throw ex; // Re-lanzar para que Spring maneje nativamente
+        }
+        
         ApiResponseDto<Void> response = ApiResponseDto.error(
             "USUARIO_NO_ENCONTRADO", 
             "Usuario no encontrado"
@@ -98,7 +122,13 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
     public ResponseEntity<ApiResponseDto<Void>> handleAccessDeniedException(
-            org.springframework.security.access.AccessDeniedException ex) {
+            org.springframework.security.access.AccessDeniedException ex, HttpServletRequest request) {
+        
+        // No manejar errores de rutas de Swagger/OpenAPI
+        if (isSwaggerPath(request)) {
+            throw ex; // Re-lanzar para que Spring maneje nativamente
+        }
+        
         ApiResponseDto<Void> response = ApiResponseDto.error(
             "ACCESO_DENEGADO", 
             "No tienes permisos para acceder a este recurso"
@@ -110,7 +140,14 @@ public class GlobalExceptionHandler {
      * Manejo de errores genéricos
      */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponseDto<Void>> handleGenericException(Exception ex, WebRequest request) {
+    public ResponseEntity<ApiResponseDto<Void>> handleGenericException(Exception ex, WebRequest request, HttpServletRequest httpRequest) {
+        
+        // No manejar errores de rutas de Swagger/OpenAPI
+        if (isSwaggerPath(httpRequest)) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponseDto.error("ERROR_INTERNO", "Ha ocurrido un error interno del servidor")
+            );
+        }
         
         // Log del error para debugging
         System.err.println("Error no manejado: " + ex.getMessage());
@@ -127,11 +164,33 @@ public class GlobalExceptionHandler {
      * Manejo de errores de argumentos ilegales
      */
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ApiResponseDto<Void>> handleIllegalArgumentException(IllegalArgumentException ex) {
+    public ResponseEntity<ApiResponseDto<Void>> handleIllegalArgumentException(IllegalArgumentException ex, HttpServletRequest request) {
+        
+        // No manejar errores de rutas de Swagger/OpenAPI
+        if (isSwaggerPath(request)) {
+            throw ex; // Re-lanzar para que Spring maneje nativamente
+        }
+        
         ApiResponseDto<Void> response = ApiResponseDto.error(
             "ARGUMENTO_INVALIDO", 
             ex.getMessage()
         );
         return ResponseEntity.badRequest().body(response);
+    }
+    
+    /**
+     * Verificar si la ruta es de Swagger/OpenAPI
+     */
+    private boolean isSwaggerPath(HttpServletRequest request) {
+        if (request == null) return false;
+        
+        String path = request.getRequestURI();
+        return path != null && (
+            path.contains("/v3/api-docs") ||
+            path.contains("/swagger-ui") ||
+            path.contains("/swagger-resources") ||
+            path.contains("/webjars") ||
+            path.endsWith("/swagger-ui.html")
+        );
     }
 }

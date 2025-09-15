@@ -17,23 +17,23 @@ import java.io.IOException;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
-    
+
     @Autowired
     private JwtUtil jwtUtil;
-    
+
     @Autowired
     private UsuarioService usuarioService;
-    
+
     @Override
-    protected void doFilterInternal(HttpServletRequest request, 
-                                  HttpServletResponse response, 
-                                  FilterChain chain) throws ServletException, IOException {
-        
+    protected void doFilterInternal(HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain chain) throws ServletException, IOException {
+
         final String authorizationHeader = request.getHeader("Authorization");
-        
+
         String username = null;
         String jwt = null;
-        
+
         // Extraer JWT del header Authorization
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             jwt = authorizationHeader.substring(7);
@@ -43,43 +43,53 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 logger.error("Error extrayendo username del JWT: " + e.getMessage());
             }
         }
-        
+
         // Si tenemos username y no hay autenticación previa
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            
+
             // Cargar detalles del usuario
             UserDetails userDetails = usuarioService.loadUserByUsername(username);
-            
+
             // Validar token
             if (jwtUtil.validateToken(jwt, userDetails.getUsername())) {
-                
+
                 // Crear token de autenticación
-                UsernamePasswordAuthenticationToken authToken = 
-                    new UsernamePasswordAuthenticationToken(
-                        userDetails, 
-                        null, 
-                        userDetails.getAuthorities()
-                    );
-                
+                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                        userDetails,
+                        null,
+                        userDetails.getAuthorities());
+
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                
+
                 // Establecer autenticación en el contexto
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
         }
-        
+
         chain.doFilter(request, response);
     }
-    
+
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String path = request.getRequestURI();
-        
-        // No filtrar estas rutas
-        return path.startsWith("/api/v1/auth/") ||
-               path.startsWith("/api/v1/actuator/") ||
-               path.equals("/api/v1/") ||
-               path.startsWith("/favicon.ico") ||
-               path.startsWith("/error");
+
+        // Imprimir para debugging
+        System.out.println("🔍 Filtering path: " + path);
+
+        // No filtrar estas rutas (sin /api/v1 porque ya está en el context-path)
+        boolean shouldSkip = path.startsWith("/auth/") ||
+                path.startsWith("/actuator/") ||
+                path.equals("/") ||
+                path.startsWith("/favicon.ico") ||
+                path.startsWith("/error") ||
+                // Swagger/OpenAPI endpoints
+                path.startsWith("/swagger-ui/") ||
+                path.startsWith("/v3/api-docs/") ||
+                path.startsWith("/swagger-resources/") ||
+                path.startsWith("/webjars/") ||
+                path.equals("/swagger-ui.html");
+
+        System.out.println("🔍 Should skip filter: " + shouldSkip);
+        return shouldSkip;
     }
 }
