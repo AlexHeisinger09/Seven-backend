@@ -2,6 +2,7 @@ package com.muellespenco.seven_backend.service;
 
 import com.muellespenco.seven_backend.config.CustomUserDetails;
 import com.muellespenco.seven_backend.config.JwtUtil;
+import com.muellespenco.seven_backend.dto.ChangePasswordRequestDto;
 import com.muellespenco.seven_backend.dto.LoginRequestDto;
 import com.muellespenco.seven_backend.dto.LoginResponseDto;
 import com.muellespenco.seven_backend.dto.UsuarioResponseDto;
@@ -100,6 +101,37 @@ public class UsuarioService implements UserDetailsService {
             System.err.println("❌ DEBUG - Exception general: " + e.getMessage());
             e.printStackTrace();
             return LoginResponseDto.error("Error interno del servidor");
+        }
+    }
+
+    /**
+     * Cambiar contraseña de usuario
+     */
+    @Transactional
+    public String changePassword(Integer usuCod, ChangePasswordRequestDto changePasswordRequest) {
+        try {
+            System.out.println("🔍 DEBUG - Iniciando cambio de contraseña para usuario: " + usuCod);
+
+            // Validar que las contraseñas nuevas coincidan
+            if (!changePasswordRequest.isPasswordsMatching()) {
+                return "<div class=\"alert alert-danger\">Las contraseñas nuevas no coinciden</div>";
+            }
+
+            // Llamar a la función stored procedure
+            String result = usuarioRepository.changePassword(
+                usuCod,
+                changePasswordRequest.getCurrentPassword(),
+                changePasswordRequest.getNewPassword(),
+                changePasswordRequest.getConfirmPassword()
+            );
+
+            System.out.println("✅ DEBUG - Resultado del cambio de contraseña: " + result);
+            return result;
+
+        } catch (Exception e) {
+            System.err.println("❌ DEBUG - Error en cambio de contraseña: " + e.getMessage());
+            e.printStackTrace();
+            return "<div class=\"alert alert-danger\">Error interno del servidor al cambiar la contraseña</div>";
         }
     }
 

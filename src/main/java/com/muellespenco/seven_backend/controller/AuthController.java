@@ -2,6 +2,7 @@ package com.muellespenco.seven_backend.controller;
 
 import com.muellespenco.seven_backend.config.JwtUtil;
 import com.muellespenco.seven_backend.dto.ApiResponseDto;
+import com.muellespenco.seven_backend.dto.ChangePasswordRequestDto;
 import com.muellespenco.seven_backend.dto.LoginRequestDto;
 import com.muellespenco.seven_backend.dto.LoginResponseDto;
 import com.muellespenco.seven_backend.dto.UsuarioResponseDto;
@@ -10,6 +11,8 @@ import com.muellespenco.seven_backend.repository.UsuarioRepository;
 import com.muellespenco.seven_backend.service.UsuarioService;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 import java.time.LocalDate;
@@ -31,6 +34,7 @@ import org.springframework.core.env.Environment;
 @RestController
 @RequestMapping("/auth")
 @CrossOrigin(origins = { "http://localhost:3000", "http://localhost:5173" })
+@Tag(name = "Autenticación", description = "Endpoints para autenticación y gestión de usuarios")
 public class AuthController {
 
     @Autowired
@@ -49,6 +53,7 @@ public class AuthController {
      * Endpoint de login
      */
     @PostMapping("/login")
+    @Operation(summary = "Iniciar sesión", description = "Autentica un usuario y devuelve un token JWT")
     public ResponseEntity<ApiResponseDto<LoginResponseDto>> login(
             @Valid @RequestBody LoginRequestDto loginRequest) {
 
@@ -81,6 +86,8 @@ public class AuthController {
      * Endpoint para validar token
      */
     @PostMapping("/validate")
+    @Operation(summary = "Validar token", description = "Valida si un token JWT es válido")
+    @SecurityRequirement(name = "Bearer Authentication")
     public ResponseEntity<ApiResponseDto<UsuarioResponseDto>> validateToken(
             @RequestHeader("Authorization") String authHeader) {
 
@@ -120,6 +127,8 @@ public class AuthController {
      * Endpoint para obtener información del usuario actual
      */
     @GetMapping("/me")
+    @Operation(summary = "Obtener usuario actual", description = "Obtiene la información del usuario autenticado")
+    @SecurityRequirement(name = "Bearer Authentication")
     public ResponseEntity<ApiResponseDto<UsuarioResponseDto>> getCurrentUser(
             @RequestHeader("Authorization") String authHeader) {
 
@@ -151,9 +160,62 @@ public class AuthController {
     }
 
     /**
+     * Endpoint para cambiar contraseña
+     */
+    @PostMapping("/change-password")
+    @Operation(summary = "Cambiar contraseña", description = "Permite al usuario cambiar su contraseña")
+    @SecurityRequirement(name = "Bearer Authentication")
+    public ResponseEntity<ApiResponseDto<String>> changePassword(
+            @RequestHeader("Authorization") String authHeader,
+            @Valid @RequestBody ChangePasswordRequestDto changePasswordRequest) {
+
+        try {
+            String token = jwtUtil.extractTokenFromHeader(authHeader);
+
+            if (token == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponseDto.error("TOKEN_REQUERIDO", "Token de autorización requerido"));
+            }
+
+            // Obtener el código de usuario del token
+            Integer usuCod = jwtUtil.extractUsuCod(token);
+            
+            if (usuCod == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponseDto.error("TOKEN_INVALIDO", "Token inválido - no se pudo obtener el usuario"));
+            }
+
+            // Validar que las contraseñas nuevas coincidan
+            if (!changePasswordRequest.isPasswordsMatching()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(ApiResponseDto.error("PASSWORDS_NO_COINCIDEN", "Las contraseñas nuevas no coinciden"));
+            }
+
+            // Llamar al servicio para cambiar la contraseña
+            String result = usuarioService.changePassword(usuCod, changePasswordRequest);
+
+            // Analizar el resultado para determinar si fue exitoso
+            if (result.contains("alert-success")) {
+                return ResponseEntity.ok(ApiResponseDto.success(result, "Contraseña cambiada exitosamente"));
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(ApiResponseDto.error("CAMBIO_PASSWORD_FALLIDO", result));
+            }
+
+        } catch (Exception e) {
+            System.err.println("Error en cambio de contraseña: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponseDto.error("ERROR_CAMBIO_PASSWORD", "Error interno al cambiar la contraseña"));
+        }
+    }
+
+    /**
      * Endpoint para logout (invalidar token - opcional)
      */
     @PostMapping("/logout")
+    @Operation(summary = "Cerrar sesión", description = "Cierra la sesión del usuario")
+    @SecurityRequirement(name = "Bearer Authentication")
     public ResponseEntity<ApiResponseDto<String>> logout(
             @RequestHeader("Authorization") String authHeader) {
 
@@ -328,6 +390,7 @@ public class AuthController {
      * Endpoint de health check
      */
     @GetMapping("/health")
+    @Operation(summary = "Health check", description = "Verifica el estado del servicio de autenticación")
     public ResponseEntity<ApiResponseDto<String>> health() {
         ApiResponseDto<String> response = ApiResponseDto.success(
                 "Auth service funcionando correctamente",

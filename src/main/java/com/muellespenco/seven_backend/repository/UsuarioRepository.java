@@ -77,4 +77,13 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
      */
     @Query("SELECT u FROM Usuario u WHERE (u.usuUser = :credential OR u.usuEmail = :credential) AND :fechaActual BETWEEN u.usuVigDesde AND u.usuVigHasta")
     Optional<Usuario> findByCredentialAndVigente(@Param("credential") String credential, @Param("fechaActual") LocalDate fechaActual);
+    
+    /**
+     * Llamar a la función stored procedure para cambiar contraseña
+     */
+    @Query(value = "SELECT web_eventuales.sp_editar_clave_usuario(:codUser, :passAntiguo, :passNuevo, :passRepite)", nativeQuery = true)
+    String changePassword(@Param("codUser") Integer codUser, 
+                         @Param("passAntiguo") String passAntiguo, 
+                         @Param("passNuevo") String passNuevo, 
+                         @Param("passRepite") String passRepite);
 }
