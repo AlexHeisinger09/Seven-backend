@@ -11,9 +11,9 @@ spring:
     name: backend-api
   
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:tu_base_datos}
+    url: jdbc:postgresql://${DB_HOST:172.16.0.36}:${DB_PORT:5432}/${DB_NAME:seven}
     username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:password}
+    password: ${DB_PASSWORD:C4ronte65$}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: ${DB_POOL_SIZE:10}
@@ -66,9 +66,9 @@ spring:
 # JWT Configuration
 app:
   jwt:
-    secret: ${JWT_SECRET:miClaveSecretaSuperSeguraParaJWT2024!ChangeMeInProduction}
-    expiration: ${JWT_EXPIRATION:86400000} # 24 horas en milisegundos
-    refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000} # 7 días en milisegundos
+    secret: ${JWT_SECRET:miClaveSecretaSuperSeguraParaJWT2024ChangeMeInProduction123456}
+    expiration: ${JWT_EXPIRATION:86400000}
+    refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
 
 # Configuración de la aplicación
 application:
@@ -113,18 +113,6 @@ profiles:
 # OpenAPI/Swagger Configuration
 springdoc:
   api-docs:
-    path: /v3/api-docs
     enabled: true
   swagger-ui:
-    path: /swagger-ui.html
     enabled: true
-    try-it-out-enabled: true
-    operations-sorter: method
-    tags-sorter: alpha
-    doc-expansion: none
-    display-request-duration: true
-    show-extensions: true
-    show-common-extensions: true
-  show-actuator: true
-  default-consumes-media-type: application/json
-  default-produces-media-type: application/json

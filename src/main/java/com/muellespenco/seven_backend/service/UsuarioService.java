@@ -25,14 +25,13 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 public class UsuarioService implements UserDetailsService {
-    
+
     @Autowired
     private UsuarioRepository usuarioRepository;
-    
+
     @Autowired
     private JwtUtil jwtUtil;
-    
-    
+
     /**
      * Implementación de UserDetailsService para Spring Security
      */
@@ -40,55 +39,70 @@ public class UsuarioService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         Usuario usuario = usuarioRepository.findByCredentialAndVigente(username, LocalDate.now())
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + username));
-        
+
         return new CustomUserDetails(usuario);
     }
-    
+
     /**
      * Autenticar usuario y generar token JWT
      */
     public LoginResponseDto authenticate(LoginRequestDto loginRequest) {
         try {
+            System.out.println("🔍 DEBUG - Iniciando autenticación para: " + loginRequest.getCredential());
+
             // Buscar usuario por username o email
             Usuario usuario = usuarioRepository.findByCredentialAndVigente(
-                    loginRequest.getCredential(), 
-                    LocalDate.now()
-            ).orElseThrow(() -> new BadCredentialsException("Credenciales inválidas"));
-            
+                    loginRequest.getCredential(),
+                    LocalDate.now()).orElseThrow(() -> {
+                        System.out.println("❌ DEBUG - Usuario no encontrado");
+                        return new BadCredentialsException("Credenciales inválidas");
+                    });
+
+            System.out.println("✅ DEBUG - Usuario encontrado: " + usuario.getUsuUser());
+
             // Verificar contraseña con MD5
-            if (!validateMD5Password(loginRequest.getPassword(), usuario.getUsuPass())) {
+            boolean passwordValid = validateMD5Password(loginRequest.getPassword(), usuario.getUsuPass());
+            System.out.println("🔑 DEBUG - Validación de contraseña: " + passwordValid);
+
+            if (!passwordValid) {
+                System.out.println("❌ DEBUG - Contraseña inválida");
                 throw new BadCredentialsException("Credenciales inválidas");
             }
-            
+
+            System.out.println("✅ DEBUG - Contraseña válida, actualizando última conexión");
+
             // Actualizar última conexión
             usuario.setUsuUltimaConexion(LocalDateTime.now());
             usuarioRepository.save(usuario);
-            
+
+            System.out.println("✅ DEBUG - Generando token JWT");
+
             // Generar token JWT
             String token = jwtUtil.generateToken(
-                usuario.getUsuUser(), 
-                usuario.getUsuCod(), 
-                usuario.getUsuEmail()
-            );
-            
+                    usuario.getUsuUser(),
+                    usuario.getUsuCod(),
+                    usuario.getUsuEmail());
+
+            System.out.println("✅ DEBUG - Token generado exitosamente");
+
             // Crear respuesta
             UsuarioResponseDto usuarioResponse = UsuarioResponseDto.from(usuario);
-            
+
             return LoginResponseDto.success(
-                token, 
-                jwtUtil.getExpirationTimeInSeconds(), 
-                usuarioResponse
-            );
-            
+                    token,
+                    jwtUtil.getExpirationTimeInSeconds(),
+                    usuarioResponse);
+
         } catch (BadCredentialsException e) {
+            System.out.println("❌ DEBUG - BadCredentialsException: " + e.getMessage());
             return LoginResponseDto.error("Credenciales inválidas");
         } catch (Exception e) {
-            System.err.println("Error en autenticación: " + e.getMessage());
+            System.err.println("❌ DEBUG - Exception general: " + e.getMessage());
             e.printStackTrace();
             return LoginResponseDto.error("Error interno del servidor");
         }
     }
-    
+
     /**
      * Validar contraseña MD5
      */
@@ -103,7 +117,7 @@ public class UsuarioService implements UserDetailsService {
             return false;
         }
     }
-    
+
     /**
      * Convertir bytes a hexadecimal
      */
@@ -114,7 +128,7 @@ public class UsuarioService implements UserDetailsService {
         }
         return result.toString();
     }
-    
+
     /**
      * Obtener usuario por ID
      */
@@ -123,7 +137,7 @@ public class UsuarioService implements UserDetailsService {
         return usuarioRepository.findById(usuCod)
                 .map(UsuarioResponseDto::from);
     }
-    
+
     /**
      * Obtener usuario por username
      */
@@ -132,7 +146,7 @@ public class UsuarioService implements UserDetailsService {
         return usuarioRepository.findByUsuUser(username)
                 .map(UsuarioResponseDto::from);
     }
-    
+
     /**
      * Obtener usuario por email
      */
@@ -141,7 +155,7 @@ public class UsuarioService implements UserDetailsService {
         return usuarioRepository.findByUsuEmail(email)
                 .map(UsuarioResponseDto::from);
     }
-    
+
     /**
      * Obtener todos los usuarios vigentes
      */
@@ -152,7 +166,7 @@ public class UsuarioService implements UserDetailsService {
                 .map(UsuarioResponseDto::from)
                 .collect(Collectors.toList());
     }
-    
+
     /**
      * Buscar usuarios por nombre
      */
@@ -163,7 +177,7 @@ public class UsuarioService implements UserDetailsService {
                 .map(UsuarioResponseDto::from)
                 .collect(Collectors.toList());
     }
-    
+
     /**
      * Verificar si existe un usuario con ese username
      */
@@ -171,7 +185,7 @@ public class UsuarioService implements UserDetailsService {
     public boolean existsByUsername(String username) {
         return usuarioRepository.existsByUsuUser(username);
     }
-    
+
     /**
      * Verificar si existe un usuario con ese email
      */
@@ -179,7 +193,7 @@ public class UsuarioService implements UserDetailsService {
     public boolean existsByEmail(String email) {
         return usuarioRepository.existsByUsuEmail(email);
     }
-    
+
     /**
      * Verificar si existe un usuario con ese RUT
      */
@@ -187,7 +201,7 @@ public class UsuarioService implements UserDetailsService {
     public boolean existsByRut(String rut) {
         return usuarioRepository.existsByUsuRut(rut);
     }
-    
+
     /**
      * Obtener usuario desde token JWT
      */
@@ -200,14 +214,14 @@ public class UsuarioService implements UserDetailsService {
             return Optional.empty();
         }
     }
-    
+
     /**
      * Validar token JWT
      */
     public boolean isValidToken(String token) {
         return jwtUtil.isValidToken(token);
     }
-    
+
     /**
      * Actualizar última conexión
      */
@@ -218,7 +232,7 @@ public class UsuarioService implements UserDetailsService {
                     usuarioRepository.save(usuario);
                 });
     }
-    
+
     /**
      * Obtener información del usuario autenticado actual
      */
@@ -227,7 +241,7 @@ public class UsuarioService implements UserDetailsService {
         return usuarioRepository.findByUsuUserAndVigente(username, LocalDate.now())
                 .map(UsuarioResponseDto::from);
     }
-    
+
     /**
      * Contar usuarios vigentes
      */
@@ -235,7 +249,7 @@ public class UsuarioService implements UserDetailsService {
     public long countVigentes() {
         return usuarioRepository.findAllVigentes(LocalDate.now()).size();
     }
-    
+
     /**
      * Obtener usuarios por tipo
      */

@@ -78,18 +78,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         // No filtrar estas rutas (sin /api/v1 porque ya está en el context-path)
         boolean shouldSkip = path.startsWith("/auth/") ||
-                path.startsWith("/actuator/") ||
-                path.equals("/") ||
-                path.startsWith("/favicon.ico") ||
-                path.startsWith("/error") ||
-                // Swagger/OpenAPI endpoints
-                path.startsWith("/swagger-ui/") ||
-                path.startsWith("/v3/api-docs/") ||
-                path.startsWith("/swagger-resources/") ||
-                path.startsWith("/webjars/") ||
-                path.equals("/swagger-ui.html");
+            path.startsWith("/actuator/") ||
+            path.equals("/") ||
+            path.startsWith("/favicon.ico") ||
+            path.startsWith("/error") ||
+            // Swagger/OpenAPI endpoints - SIN el prefijo /api/v1
+            path.contains("/swagger-ui") ||
+            path.contains("/v3/api-docs") ||
+            path.contains("/swagger-resources") ||
+            path.contains("/webjars");
 
-        System.out.println("🔍 Should skip filter: " + shouldSkip);
-        return shouldSkip;
+    System.out.println("🔍 Filtering path: " + path);
+    System.out.println("🔍 Should skip filter: " + shouldSkip);
+    return shouldSkip;
     }
 }

@@ -49,7 +49,6 @@ public class SecurityConfig {
                                 "/error",
                                 "/favicon.ico",
                                 "/",
-                                // Swagger/OpenAPI endpoints
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",
