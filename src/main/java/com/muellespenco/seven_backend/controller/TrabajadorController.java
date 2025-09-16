@@ -77,7 +77,7 @@ public class TrabajadorController {
             }
 
             // Buscar la información del trabajador
-            Optional<TrabajadorResponseDto> trabajadorOpt = trabajadorService.findByFichaTrabajadorVigente(usuFicha);
+            Optional<TrabajadorResponseDto> trabajadorOpt = trabajadorService.findByFichaTrabajador(usuFicha);
 
             if (trabajadorOpt.isPresent()) {
                 ApiResponseDto<TrabajadorResponseDto> response = ApiResponseDto.success(
