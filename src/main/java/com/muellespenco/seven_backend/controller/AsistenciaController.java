@@ -43,6 +43,63 @@ public class AsistenciaController {
     private JwtUtil jwtUtil;
 
     /**
+     * Obtener todas las asistencias del trabajador autenticado
+     */
+    @GetMapping("/me/todas")
+    @Operation(summary = "Obtener todas mis asistencias", description = "Obtiene todas las asistencias del trabajador autenticado ordenadas por fecha descendente")
+    @SecurityRequirement(name = "Bearer Authentication")
+    public ResponseEntity<ApiResponseDto<List<AsistenciaResponseDto>>> getTodasMisAsistencias(
+            @RequestHeader("Authorization") String authHeader) {
+
+        try {
+            String token = jwtUtil.extractTokenFromHeader(authHeader);
+
+            if (token == null || !jwtUtil.isValidToken(token)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponseDto.error("TOKEN_INVALIDO", "Token inválido o expirado"));
+            }
+
+            // Obtener usuario del token
+            Integer usuCod = jwtUtil.extractUsuCod(token);
+            if (usuCod == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponseDto.error("TOKEN_INVALIDO", "No se pudo obtener el usuario del token"));
+            }
+
+            Optional<Usuario> usuarioOpt = usuarioRepository.findById(usuCod);
+            if (usuarioOpt.isEmpty() || usuarioOpt.get().getUsuFicha() == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponseDto.error("FICHA_NO_ENCONTRADA",
+                                "No se encontró ficha de trabajador asociada"));
+            }
+
+            Long UsuFicha = usuarioOpt.get().getUsuFicha();
+            Optional<Trabajador> trabajadorOpt = trabajadorRepository.findByTraFichaTrabajador(UsuFicha);
+            if (trabajadorOpt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponseDto.error("TRABAJADOR_NO_ENCONTRADO",
+                                "No existe trabajador para la ficha " + UsuFicha));
+            }
+            Long traFicha = trabajadorOpt.get().getTraFicha();
+
+            // Usar el método existente del servicio
+            List<AsistenciaResponseDto> asistencias = asistenciaService.findByTraFicha(traFicha);
+
+            ApiResponseDto<List<AsistenciaResponseDto>> response = ApiResponseDto.success(
+                    asistencias,
+                    "Se obtuvieron " + asistencias.size() + " registros de asistencia totales");
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            System.err.println("Error obteniendo todas las asistencias: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponseDto.error("ERROR_INTERNO", "Error interno del servidor"));
+        }
+    }
+
+    /**
      * Obtener mi asistencia por mes y año
      */
     @GetMapping("/me/mes/{anio}/{mes}")
