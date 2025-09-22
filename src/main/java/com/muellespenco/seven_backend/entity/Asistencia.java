@@ -2,7 +2,6 @@ package com.muellespenco.seven_backend.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDate;
-import java.time.LocalTime;
 
 @Entity
 @Table(name = "v_asistencia_trabajador_faena_cerrada", schema = "eventuales")
@@ -28,7 +27,7 @@ public class Asistencia {
     private String showFechaPlanif;
     
     @Column(name = "fae_hora_inicial_planif")
-    private LocalTime faeHoraInicialPlanif;
+    private String faeHoraInicialPlanif;
     
     @Column(name = "fae_turno_cod")
     private Integer faeTurnoCod;
@@ -120,8 +119,8 @@ public class Asistencia {
     public String getShowFechaPlanif() { return showFechaPlanif; }
     public void setShowFechaPlanif(String showFechaPlanif) { this.showFechaPlanif = showFechaPlanif; }
     
-    public LocalTime getFaeHoraInicialPlanif() { return faeHoraInicialPlanif; }
-    public void setFaeHoraInicialPlanif(LocalTime faeHoraInicialPlanif) { this.faeHoraInicialPlanif = faeHoraInicialPlanif; }
+    public String getFaeHoraInicialPlanif() { return faeHoraInicialPlanif; }
+    public void setFaeHoraInicialPlanif(String faeHoraInicialPlanif) { this.faeHoraInicialPlanif = faeHoraInicialPlanif; }
     
     public Integer getFaeTurnoCod() { return faeTurnoCod; }
     public void setFaeTurnoCod(Integer faeTurnoCod) { this.faeTurnoCod = faeTurnoCod; }

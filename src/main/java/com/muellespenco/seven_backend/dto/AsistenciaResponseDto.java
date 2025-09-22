@@ -4,7 +4,6 @@ import com.muellespenco.seven_backend.entity.Asistencia;
 
 import java.io.Serializable;
 import java.time.LocalDate;
-import java.time.LocalTime;
 
 public class AsistenciaResponseDto implements Serializable {
     
@@ -14,7 +13,7 @@ public class AsistenciaResponseDto implements Serializable {
     private String tfaDescripcion;
     private LocalDate faeFechaInicialPlanif;
     private String showFechaPlanif;
-    private LocalTime faeHoraInicialPlanif;
+    private String faeHoraInicialPlanif;
     private Integer faeTurnoCod;
     private String turnoNombre;
     private Long traFicha;
@@ -90,8 +89,8 @@ public class AsistenciaResponseDto implements Serializable {
     public String getShowFechaPlanif() { return showFechaPlanif; }
     public void setShowFechaPlanif(String showFechaPlanif) { this.showFechaPlanif = showFechaPlanif; }
     
-    public LocalTime getFaeHoraInicialPlanif() { return faeHoraInicialPlanif; }
-    public void setFaeHoraInicialPlanif(LocalTime faeHoraInicialPlanif) { this.faeHoraInicialPlanif = faeHoraInicialPlanif; }
+    public String getFaeHoraInicialPlanif() { return faeHoraInicialPlanif; }
+    public void setFaeHoraInicialPlanif(String faeHoraInicialPlanif) { this.faeHoraInicialPlanif = faeHoraInicialPlanif; }
     
     public Integer getFaeTurnoCod() { return faeTurnoCod; }
     public void setFaeTurnoCod(Integer faeTurnoCod) { this.faeTurnoCod = faeTurnoCod; }

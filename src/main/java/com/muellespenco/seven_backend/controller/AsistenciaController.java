@@ -3,7 +3,9 @@ package com.muellespenco.seven_backend.controller;
 import com.muellespenco.seven_backend.config.JwtUtil;
 import com.muellespenco.seven_backend.dto.ApiResponseDto;
 import com.muellespenco.seven_backend.dto.AsistenciaResponseDto;
+import com.muellespenco.seven_backend.entity.Trabajador;
 import com.muellespenco.seven_backend.entity.Usuario;
+import com.muellespenco.seven_backend.repository.TrabajadorRepository;
 import com.muellespenco.seven_backend.repository.UsuarioRepository;
 import com.muellespenco.seven_backend.service.AsistenciaService;
 
@@ -35,6 +37,9 @@ public class AsistenciaController {
     private UsuarioRepository usuarioRepository;
 
     @Autowired
+    private TrabajadorRepository trabajadorRepository;
+
+    @Autowired
     private JwtUtil jwtUtil;
 
     /**
@@ -44,10 +49,8 @@ public class AsistenciaController {
     @Operation(summary = "Obtener mi asistencia por mes", description = "Obtiene la asistencia del trabajador autenticado para un mes específico")
     @SecurityRequirement(name = "Bearer Authentication")
     public ResponseEntity<ApiResponseDto<List<AsistenciaResponseDto>>> getMiAsistenciaMensual(
-            @Parameter(description = "Año", required = true)
-            @PathVariable int anio,
-            @Parameter(description = "Mes (1-12)", required = true)
-            @PathVariable int mes,
+            @Parameter(description = "Año", required = true) @PathVariable int anio,
+            @Parameter(description = "Mes (1-12)", required = true) @PathVariable int mes,
             @RequestHeader("Authorization") String authHeader) {
 
         try {
@@ -66,7 +69,8 @@ public class AsistenciaController {
 
             if (anio < 2000 || anio > LocalDate.now().getYear() + 1) {
                 return ResponseEntity.badRequest()
-                        .body(ApiResponseDto.error("ANIO_INVALIDO", "El año debe estar entre 2000 y " + (LocalDate.now().getYear() + 1)));
+                        .body(ApiResponseDto.error("ANIO_INVALIDO",
+                                "El año debe estar entre 2000 y " + (LocalDate.now().getYear() + 1)));
             }
 
             // Obtener usuario del token
@@ -79,10 +83,18 @@ public class AsistenciaController {
             Optional<Usuario> usuarioOpt = usuarioRepository.findById(usuCod);
             if (usuarioOpt.isEmpty() || usuarioOpt.get().getUsuFicha() == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(ApiResponseDto.error("FICHA_NO_ENCONTRADA", "No se encontró ficha de trabajador asociada"));
+                        .body(ApiResponseDto.error("FICHA_NO_ENCONTRADA",
+                                "No se encontró ficha de trabajador asociada"));
             }
 
-            Long traFicha = usuarioOpt.get().getUsuFicha();
+            Long UsuFicha = usuarioOpt.get().getUsuFicha();
+            Optional<Trabajador> trabajadorOpt = trabajadorRepository.findByTraFichaTrabajador(UsuFicha);
+            if (trabajadorOpt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponseDto.error("TRABAJADOR_NO_ENCONTRADO",
+                                "No existe trabajador para la ficha " + UsuFicha));
+            }
+            Long traFicha = trabajadorOpt.get().getTraFicha();
 
             // Obtener asistencias
             List<AsistenciaResponseDto> asistencias = asistenciaService.findByTraFichaAndMonthYear(traFicha, mes, anio);
@@ -108,8 +120,7 @@ public class AsistenciaController {
     @Operation(summary = "Obtener mi asistencia por fecha", description = "Obtiene la asistencia del trabajador autenticado para una fecha específica")
     @SecurityRequirement(name = "Bearer Authentication")
     public ResponseEntity<ApiResponseDto<List<AsistenciaResponseDto>>> getMiAsistenciaFecha(
-            @Parameter(description = "Fecha (yyyy-MM-dd)", required = true)
-            @PathVariable @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate fecha,
+            @Parameter(description = "Fecha (yyyy-MM-dd)", required = true) @PathVariable @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate fecha,
             @RequestHeader("Authorization") String authHeader) {
 
         try {
@@ -130,10 +141,18 @@ public class AsistenciaController {
             Optional<Usuario> usuarioOpt = usuarioRepository.findById(usuCod);
             if (usuarioOpt.isEmpty() || usuarioOpt.get().getUsuFicha() == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(ApiResponseDto.error("FICHA_NO_ENCONTRADA", "No se encontró ficha de trabajador asociada"));
+                        .body(ApiResponseDto.error("FICHA_NO_ENCONTRADA",
+                                "No se encontró ficha de trabajador asociada"));
             }
 
-            Long traFicha = usuarioOpt.get().getUsuFicha();
+            Long UsuFicha = usuarioOpt.get().getUsuFicha();
+            Optional<Trabajador> trabajadorOpt = trabajadorRepository.findByTraFichaTrabajador(UsuFicha);
+            if (trabajadorOpt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponseDto.error("TRABAJADOR_NO_ENCONTRADO",
+                                "No existe trabajador para la ficha " + UsuFicha));
+            }
+            Long traFicha = trabajadorOpt.get().getTraFicha();
 
             // Obtener asistencias para la fecha
             List<AsistenciaResponseDto> asistencias = asistenciaService.findByTraFichaAndFecha(traFicha, fecha);
@@ -159,10 +178,8 @@ public class AsistenciaController {
     @Operation(summary = "Obtener días con asistencia", description = "Obtiene los días del mes en los que el trabajador tiene asistencia registrada")
     @SecurityRequirement(name = "Bearer Authentication")
     public ResponseEntity<ApiResponseDto<List<Integer>>> getDiasConAsistencia(
-            @Parameter(description = "Año", required = true)
-            @PathVariable int anio,
-            @Parameter(description = "Mes (1-12)", required = true)
-            @PathVariable int mes,
+            @Parameter(description = "Año", required = true) @PathVariable int anio,
+            @Parameter(description = "Mes (1-12)", required = true) @PathVariable int mes,
             @RequestHeader("Authorization") String authHeader) {
 
         try {
@@ -189,10 +206,18 @@ public class AsistenciaController {
             Optional<Usuario> usuarioOpt = usuarioRepository.findById(usuCod);
             if (usuarioOpt.isEmpty() || usuarioOpt.get().getUsuFicha() == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(ApiResponseDto.error("FICHA_NO_ENCONTRADA", "No se encontró ficha de trabajador asociada"));
+                        .body(ApiResponseDto.error("FICHA_NO_ENCONTRADA",
+                                "No se encontró ficha de trabajador asociada"));
             }
 
-            Long traFicha = usuarioOpt.get().getUsuFicha();
+            Long UsuFicha = usuarioOpt.get().getUsuFicha();
+            Optional<Trabajador> trabajadorOpt = trabajadorRepository.findByTraFichaTrabajador(UsuFicha);
+            if (trabajadorOpt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponseDto.error("TRABAJADOR_NO_ENCONTRADO",
+                                "No existe trabajador para la ficha " + UsuFicha));
+            }
+            Long traFicha = trabajadorOpt.get().getTraFicha();
 
             // Obtener días con asistencia
             List<Integer> diasConAsistencia = asistenciaService.getDiasConAsistencia(traFicha, mes, anio);
@@ -218,10 +243,8 @@ public class AsistenciaController {
     @Operation(summary = "Obtener estadísticas de asistencia mensual", description = "Obtiene estadísticas de asistencia del trabajador para un mes específico")
     @SecurityRequirement(name = "Bearer Authentication")
     public ResponseEntity<ApiResponseDto<AsistenciaService.EstadisticasAsistenciaDto>> getEstadisticasMensuales(
-            @Parameter(description = "Año", required = true)
-            @PathVariable int anio,
-            @Parameter(description = "Mes (1-12)", required = true)
-            @PathVariable int mes,
+            @Parameter(description = "Año", required = true) @PathVariable int anio,
+            @Parameter(description = "Mes (1-12)", required = true) @PathVariable int mes,
             @RequestHeader("Authorization") String authHeader) {
 
         try {
@@ -248,14 +271,22 @@ public class AsistenciaController {
             Optional<Usuario> usuarioOpt = usuarioRepository.findById(usuCod);
             if (usuarioOpt.isEmpty() || usuarioOpt.get().getUsuFicha() == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(ApiResponseDto.error("FICHA_NO_ENCONTRADA", "No se encontró ficha de trabajador asociada"));
+                        .body(ApiResponseDto.error("FICHA_NO_ENCONTRADA",
+                                "No se encontró ficha de trabajador asociada"));
             }
 
-            Long traFicha = usuarioOpt.get().getUsuFicha();
+            Long UsuFicha = usuarioOpt.get().getUsuFicha();
+            Optional<Trabajador> trabajadorOpt = trabajadorRepository.findByTraFichaTrabajador(UsuFicha);
+            if (trabajadorOpt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponseDto.error("TRABAJADOR_NO_ENCONTRADO",
+                                "No existe trabajador para la ficha " + UsuFicha));
+            }
+            Long traFicha = trabajadorOpt.get().getTraFicha();
 
             // Obtener estadísticas
-            AsistenciaService.EstadisticasAsistenciaDto estadisticas = 
-                asistenciaService.getEstadisticasMensual(traFicha, mes, anio);
+            AsistenciaService.EstadisticasAsistenciaDto estadisticas = asistenciaService
+                    .getEstadisticasMensual(traFicha, mes, anio);
 
             ApiResponseDto<AsistenciaService.EstadisticasAsistenciaDto> response = ApiResponseDto.success(
                     estadisticas,
@@ -278,8 +309,7 @@ public class AsistenciaController {
     @Operation(summary = "Obtener últimas asistencias", description = "Obtiene las últimas asistencias del trabajador autenticado")
     @SecurityRequirement(name = "Bearer Authentication")
     public ResponseEntity<ApiResponseDto<List<AsistenciaResponseDto>>> getUltimasAsistencias(
-            @Parameter(description = "Número de registros a obtener", required = false)
-            @RequestParam(defaultValue = "10") int limite,
+            @Parameter(description = "Número de registros a obtener", required = false) @RequestParam(defaultValue = "10") int limite,
             @RequestHeader("Authorization") String authHeader) {
 
         try {
@@ -306,10 +336,18 @@ public class AsistenciaController {
             Optional<Usuario> usuarioOpt = usuarioRepository.findById(usuCod);
             if (usuarioOpt.isEmpty() || usuarioOpt.get().getUsuFicha() == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(ApiResponseDto.error("FICHA_NO_ENCONTRADA", "No se encontró ficha de trabajador asociada"));
+                        .body(ApiResponseDto.error("FICHA_NO_ENCONTRADA",
+                                "No se encontró ficha de trabajador asociada"));
             }
 
-            Long traFicha = usuarioOpt.get().getUsuFicha();
+            Long UsuFicha = usuarioOpt.get().getUsuFicha();
+            Optional<Trabajador> trabajadorOpt = trabajadorRepository.findByTraFichaTrabajador(UsuFicha);
+            if (trabajadorOpt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponseDto.error("TRABAJADOR_NO_ENCONTRADO",
+                                "No existe trabajador para la ficha " + UsuFicha));
+            }
+            Long traFicha = trabajadorOpt.get().getTraFicha();
 
             // Obtener últimas asistencias
             List<AsistenciaResponseDto> asistencias = asistenciaService.getUltimasAsistencias(traFicha, limite);
