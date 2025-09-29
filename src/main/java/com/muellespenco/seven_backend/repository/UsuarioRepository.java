@@ -41,6 +41,12 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
     Optional<Usuario> findByUsuEmailAndVigente(@Param("usuEmail") String usuEmail, @Param("fechaActual") LocalDate fechaActual);
     
     /**
+     * 🔥 NUEVO: Buscar usuario por RUT Y que esté vigente
+     */
+    @Query("SELECT u FROM Usuario u WHERE u.usuRut = :usuRut AND :fechaActual BETWEEN u.usuVigDesde AND u.usuVigHasta")
+    Optional<Usuario> findByUsuRutAndVigente(@Param("usuRut") String usuRut, @Param("fechaActual") LocalDate fechaActual);
+    
+    /**
      * Verificar si existe un usuario con ese username
      */
     boolean existsByUsuUser(String usuUser);
@@ -73,9 +79,11 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
     List<Usuario> findByNombreContainingIgnoreCase(@Param("nombre") String nombre);
     
     /**
-     * Buscar usuario para autenticación (username o email)
+     * 🔥 ACTUALIZADO: Buscar usuario para autenticación (username, email o RUT)
      */
-    @Query("SELECT u FROM Usuario u WHERE (u.usuUser = :credential OR u.usuEmail = :credential) AND :fechaActual BETWEEN u.usuVigDesde AND u.usuVigHasta")
+    @Query("SELECT u FROM Usuario u WHERE " +
+           "(u.usuUser = :credential OR u.usuEmail = :credential OR u.usuRut = :credential) " +
+           "AND :fechaActual BETWEEN u.usuVigDesde AND u.usuVigHasta")
     Optional<Usuario> findByCredentialAndVigente(@Param("credential") String credential, @Param("fechaActual") LocalDate fechaActual);
     
     /**

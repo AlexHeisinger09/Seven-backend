@@ -45,21 +45,27 @@ public class UsuarioService implements UserDetailsService {
     }
 
     /**
-     * Autenticar usuario y generar token JWT
+     * 🔥 ACTUALIZADO: Autenticar usuario y generar token JWT (ahora soporta RUT)
      */
     public LoginResponseDto authenticate(LoginRequestDto loginRequest) {
         try {
             System.out.println("🔍 DEBUG - Iniciando autenticación para: " + loginRequest.getCredential());
+            
+            // 🔥 Detectar tipo de credencial
+            String credential = loginRequest.getCredential().trim();
+            String credentialType = detectCredentialType(credential);
+            
+            System.out.println("🔍 DEBUG - Tipo de credencial detectado: " + credentialType);
 
-            // Buscar usuario por username o email
+            // Buscar usuario por credential (username, email o RUT)
             Usuario usuario = usuarioRepository.findByCredentialAndVigente(
-                    loginRequest.getCredential(),
+                    credential,
                     LocalDate.now()).orElseThrow(() -> {
-                        System.out.println("❌ DEBUG - Usuario no encontrado");
+                        System.out.println("❌ DEBUG - Usuario no encontrado para: " + credential);
                         return new BadCredentialsException("Credenciales inválidas");
                     });
 
-            System.out.println("✅ DEBUG - Usuario encontrado: " + usuario.getUsuUser());
+            System.out.println("✅ DEBUG - Usuario encontrado: " + usuario.getUsuUser() + " (RUT: " + usuario.getUsuRut() + ")");
 
             // Verificar contraseña con MD5
             boolean passwordValid = validateMD5Password(loginRequest.getPassword(), usuario.getUsuPass());
@@ -102,6 +108,22 @@ public class UsuarioService implements UserDetailsService {
             e.printStackTrace();
             return LoginResponseDto.error("Error interno del servidor");
         }
+    }
+
+    /**
+     * 🔥 NUEVO: Detectar tipo de credencial
+     */
+    private String detectCredentialType(String credential) {
+        if (credential.contains("@")) {
+            return "EMAIL";
+        }
+        
+        // Verificar si tiene formato de RUT (números, puntos, guión y posible K)
+        if (credential.matches("^[\\d.-]+[kK\\d]$")) {
+            return "RUT";
+        }
+        
+        return "USERNAME";
     }
 
     /**
@@ -185,6 +207,15 @@ public class UsuarioService implements UserDetailsService {
     @Transactional(readOnly = true)
     public Optional<UsuarioResponseDto> findByEmail(String email) {
         return usuarioRepository.findByUsuEmail(email)
+                .map(UsuarioResponseDto::from);
+    }
+
+    /**
+     * 🔥 NUEVO: Obtener usuario por RUT
+     */
+    @Transactional(readOnly = true)
+    public Optional<UsuarioResponseDto> findByRut(String rut) {
+        return usuarioRepository.findByUsuRut(rut)
                 .map(UsuarioResponseDto::from);
     }
 
