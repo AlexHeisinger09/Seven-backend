@@ -10,14 +10,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@Transactional
 public class LiquidacionService {
 
     @Autowired
@@ -29,7 +27,6 @@ public class LiquidacionService {
     /**
      * Obtiene las liquidaciones del trabajador actual
      */
-    @Transactional(readOnly = true)
     public LiquidacionesListaResponseDto getMisLiquidaciones(Integer usuCod, int page, int limit, Integer periodo, String fechaDesde, String fechaHasta) {
         try {
             // Obtener la ficha del trabajador desde el usuario
@@ -53,7 +50,6 @@ public class LiquidacionService {
     /**
      * Obtiene las liquidaciones de un trabajador con paginación
      */
-    @Transactional(readOnly = true)
     public LiquidacionesListaResponseDto getLiquidacionesByWorker(Long traFichaTrabajador, int page, int limit, Integer periodo, String fechaDesde, String fechaHasta) {
         Pageable pageable = PageRequest.of(page - 1, limit);
         Page<Liquidacion> liquidacionesPage;
@@ -107,7 +103,6 @@ public class LiquidacionService {
     /**
      * Obtiene una liquidación específica por código de nómina
      */
-    @Transactional(readOnly = true)
     public LiquidacionResponseDto getLiquidacionDetail(Long cnomCod) {
         Liquidacion liquidacion = liquidacionRepository.findByCnomCod(cnomCod);
         if (liquidacion == null) {
@@ -119,7 +114,6 @@ public class LiquidacionService {
     /**
      * Obtiene los períodos disponibles para el trabajador actual
      */
-    @Transactional(readOnly = true)
     public List<Integer> getMisPeriodosDisponibles(Integer usuCod) {
         try {
             Usuario usuario = usuarioRepository.findById(usuCod)
@@ -141,7 +135,6 @@ public class LiquidacionService {
     /**
      * Obtiene los períodos disponibles para un trabajador
      */
-    @Transactional(readOnly = true)
     public List<Integer> getAvailablePeriodsForWorker(Long traFichaTrabajador) {
         return liquidacionRepository.findAvailablePeriodsForWorker(traFichaTrabajador);
     }
